@@ -6,7 +6,6 @@ require_once __DIR__ . '/../src/Entity/Quote.php';
 require_once __DIR__ . '/../src/Entity/Site.php';
 require_once __DIR__ . '/../src/Entity/Template.php';
 require_once __DIR__ . '/../src/Entity/User.php';
-require_once __DIR__ . '/../src/Helper/SingletonTrait.php';
 require_once __DIR__ . '/../src/Context/ApplicationContext.php';
 require_once __DIR__ . '/../src/Repository/Repository.php';
 require_once __DIR__ . '/../src/Repository/DestinationRepository.php';
@@ -23,13 +22,14 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
     private User $currentUser;
 
 
+
     protected function setUp(): void
     {
         $this->faker = \Faker\Factory::create();
         $this->templateManager = new TemplateManager();
-        $this->expectedDestination = DestinationRepository::getInstance()->getById($this->faker->randomNumber());
-        $this->expectedSite = SiteRepository::getInstance()->getById($this->faker->randomNumber());
-        $this->currentUser = ApplicationContext::getInstance()->getCurrentUser();
+        $this->expectedDestination = (new DestinationRepository())->getById($this->faker->randomNumber());
+        $this->expectedSite = (new SiteRepository())->getById($this->faker->randomNumber());
+        $this->currentUser = $this->templateManager->getApplicationContext()->getCurrentUser();
     }
 
     /**

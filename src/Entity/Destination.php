@@ -6,7 +6,6 @@ class Destination
     private int $id;
     private string $countryName;
     private string $conjunction;
-    private string $name;
     private string $computerName;
 
     public function __construct(int $id, string $countryName, string $conjunction, string $computerName)
@@ -39,14 +38,6 @@ class Destination
     public function getConjunction(): string
     {
         return $this->conjunction;
-    }
-
-    /**
-     * @return string
-     */
-    public function getName(): string
-    {
-        return $this->name;
     }
 
     /**
