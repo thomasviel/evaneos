@@ -9,7 +9,7 @@ class QuoteRepository implements Repository
      *
      * @return Quote
      */
-    public function getById($id)
+    public function getById(int $id) :Quote
     {
         $generator = Faker\Factory::create();
         $generator->seed($id);
@@ -17,7 +17,7 @@ class QuoteRepository implements Repository
             $id,
             $generator->numberBetween(1, 10),
             $generator->numberBetween(1, 200),
-            $generator->dateTime()
+            $generator->date()
         );
     }
 }

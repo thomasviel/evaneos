@@ -29,7 +29,8 @@ Bien cordialement,
 
 L'équipe Evaneos.com
 www.evaneos.com
-");
+"
+);
 $templateManager = new TemplateManager();
 
 $message = $templateManager->getTemplateComputed(
@@ -39,4 +40,4 @@ $message = $templateManager->getTemplateComputed(
     ]
 );
 
-echo $message->subject . "\n" . $message->content;
+echo $message->getSubject() . "\n" . $message->getContent();

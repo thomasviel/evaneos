@@ -37,7 +37,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testDestinationName()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
         $template = new Template(
             1,
             'Votre voyage avec une agence locale [quote:destination_name]',
@@ -50,8 +50,8 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->countryName, $message->subject);
-        $this->assertEquals("Merci d'avoir contacté un agent local pour votre voyage " . $this->expectedDestination->countryName, $message->content);
+        $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
+        $this->assertEquals("Merci d'avoir contacté un agent local pour votre voyage " . $this->expectedDestination->getCountryName(), $message->getContent());
     }
 
     /**
@@ -59,7 +59,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testDestinationLink()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->id, $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
 
         $template = new Template(
             1,
@@ -73,16 +73,16 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->countryName, $message->subject);
-        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->url . '/' . $this->expectedDestination->countryName . '/quote/' . $quote->id . '', $message->content);
+        $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
+        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->getUrl() . '/' . $this->expectedDestination->getCountryName() . '/quote/' . $quote->getId() . '', $message->getContent());
     }
 
     /**
      * @test
      */
-    public function testSummary()
+    public function testSummary() : void
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
 
         $template = new Template(
             1,
@@ -96,8 +96,8 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals('Summary subject : ' . $quote->id, $message->subject);
-        $this->assertEquals('Summary content : ' . $quote->id, $message->content);
+        $this->assertEquals('Summary subject : ' . $quote->getId(), $message->getSubject());
+        $this->assertEquals('Summary content : ' . $quote->getId(), $message->getContent());
     }
 
     /**
@@ -105,7 +105,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testSummaryHTML()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
 
         $template = new Template(
             1,
@@ -119,8 +119,8 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals('Summary subject : <p>' . $quote->id . '</p>', $message->subject);
-        $this->assertEquals('Summary content : <p>' . $quote->id . '</p>', $message->content);
+        $this->assertEquals('Summary subject : <p>' . $quote->getId() . '</p>', $message->getSubject());
+        $this->assertEquals('Summary content : <p>' . $quote->getId() . '</p>', $message->getContent());
     }
 
     /**
@@ -128,7 +128,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testApplicationContextUser()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->id, $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
 
         $template = new Template(
             1,
@@ -142,8 +142,8 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals($this->currentUser->firstname . ', votre voyage est prêt', $message->subject);
-        $this->assertEquals('Bonjour ' . $this->currentUser->firstname, $message->content);
+        $this->assertEquals($this->currentUser->getFirstname() . ', votre voyage est prêt', $message->getSubject());
+        $this->assertEquals('Bonjour ' . $this->currentUser->getFirstname(), $message->getContent());
     }
 
     /**
@@ -151,7 +151,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testSpecificUser()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->id, $this->expectedDestination->id, $this->faker->date());
+        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
         $user = new User($this->faker->randomNumber(), $this->faker->firstName, $this->faker->lastName, $this->faker->email);
 
         $template = new Template(
@@ -167,8 +167,8 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals($user->firstname . ', votre voyage est prêt', $message->subject);
-        $this->assertEquals('Bonjour ' . $user->firstname, $message->content);
+        $this->assertEquals($user->getFirstname() . ', votre voyage est prêt', $message->getSubject());
+        $this->assertEquals('Bonjour ' . $user->getFirstname(), $message->getContent());
     }
     /**
      * @test
@@ -189,7 +189,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals($user->firstname . ', votre voyage est prêt', $message->subject);
-        $this->assertEquals('Bonjour ' . $user->firstname, $message->content);
+        $this->assertEquals($user->getFirstname() . ', votre voyage est prêt', $message->getSubject());
+        $this->assertEquals('Bonjour ' . $user->getFirstname(), $message->getContent());
     }
 }

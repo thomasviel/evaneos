@@ -2,5 +2,5 @@
 
 interface Repository
 {
-    public function getById($id);
+    public function getById(int $id);
 }
