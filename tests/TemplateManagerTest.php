@@ -45,6 +45,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
 
     /**
      * Init template manager for tests with Quote input.
+     *
      * @return void
      */
     private function initForTestsWithQuoteInput()
@@ -108,7 +109,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         );
 
         $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
-        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->getUrl() . '/' . $this->expectedDestination->getCountryName() . '/quote/' . $this->quote->getId() . '', $message->getContent());
+        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->getUrl() . '/' . urlencode($this->expectedDestination->getCountryName()) . '/quote/' . $this->quote->getId() . '', $message->getContent());
     }
 
     /**
@@ -151,8 +152,9 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
             ]
         );
 
-        $this->assertEquals('Summary subject : <p>' . $this->quote->getId() . '</p>', $message->getSubject());
-        $this->assertEquals('Summary content : <p>' . $this->quote->getId() . '</p>', $message->getContent());
+        $expectedSummaryHtml = htmlspecialchars('<p>' . $this->quote->getId() . '</p>');
+        $this->assertEquals("Summary subject : $expectedSummaryHtml", $message->getSubject());
+        $this->assertEquals("Summary content : $expectedSummaryHtml", $message->getContent());
     }
 
     /**
@@ -250,6 +252,5 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName() . ', oui avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
         $this->assertEquals("Merci d'avoir contacté un agent local pour votre voyage " . $this->expectedDestination->getCountryName() . ', je répète : pour votre voyage ' . $this->expectedDestination->getCountryName(), $message->getContent());
-
     }
 }

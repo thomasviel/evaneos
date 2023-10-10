@@ -7,7 +7,7 @@ class Quote
     private int $destinationId;
     private string $dateQuoted;
 
-    public function __construct(string $id, int $siteId, int $destinationId, string $dateQuoted)
+    public function __construct(int $id, int $siteId, int $destinationId, string $dateQuoted)
     {
         $this->id = $id;
         $this->siteId = $siteId;
@@ -15,14 +15,15 @@ class Quote
         $this->dateQuoted = $dateQuoted;
     }
 
+
     public static function renderHtml(Quote $quote) : string
     {
-        return '<p>' . $quote->id . '</p>';
+        return htmlspecialchars('<p>' . $quote->getId() . '</p>');
     }
 
     public static function renderText(Quote $quote)  : string
     {
-        return (string) $quote->id;
+        return $quote->id;
     }
 
     /**

@@ -16,6 +16,6 @@ class QuoteDestinationLinkReplacer implements PlaceholderReplacer
      */
     public function getReplacementText(User $user, ?Quote $quote, ?Destination $destination, ?Site $site): string
     {
-        return $quote && $destination && $site ? $site->getUrl() . '/' . $destination->getCountryName() . '/quote/' . $quote->getId() : $this->getPlaceholder();
+        return $quote && $destination && $site ? $site->getUrl() . '/' . urlencode($destination->getCountryName()) . '/quote/' . $quote->getId() : $this->getPlaceholder();
     }
 }

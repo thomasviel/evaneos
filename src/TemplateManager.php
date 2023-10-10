@@ -23,6 +23,13 @@ class TemplateManager
     }
 
 
+    /**
+     * Get template computed
+     *
+     * @param  Template                  $tpl
+     * @param  array<string, Quote|User> $data
+     * @return Template
+     */
     public function getTemplateComputed(Template $tpl, array $data): Template
     {
         $quote = (isset($data['quote']) and $data['quote'] instanceof Quote) ? $data['quote'] : null;
@@ -41,6 +48,10 @@ class TemplateManager
 
     /**
      * This method will iterate over each placeholder instance, get its placeholder and the replacement text and replace the former with the latter.
+     * To add new placeholder replacement you must :
+     * - create a new class which implements PlaceholderReplacer
+     * - implement methods to define your placeholder and replacement text
+     * - instantiate the class in PlaceholderFactory::getPlaceholderReplacerInstances
      *
      * @param  string           $text
      * @param  User             $user
