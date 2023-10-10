@@ -11,6 +11,13 @@ require_once __DIR__ . '/../src/Repository/Repository.php';
 require_once __DIR__ . '/../src/Repository/DestinationRepository.php';
 require_once __DIR__ . '/../src/Repository/QuoteRepository.php';
 require_once __DIR__ . '/../src/Repository/SiteRepository.php';
+require_once __DIR__ . '/../src/Service/Placeholder/PlaceholderFactory.php';
+require_once __DIR__ . '/../src/Service/Placeholder/PlaceholderReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteDestinationLinkReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteDestinationNameReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteSummaryHtmlReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteSummaryReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/UserFirstnameReplacer.php';
 require_once __DIR__ . '/../src/TemplateManager.php';
 
 class TemplateManagerTest extends \PHPUnit\Framework\TestCase
@@ -19,25 +26,53 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
     private TemplateManager $templateManager;
     private Destination $expectedDestination;
     private Site $expectedSite;
-    private User $currentUser;
+    private \PHPUnit\Framework\MockObject\MockObject $applicationContextMock;
+    private QuoteRepository $quoteRepositoryMock;
+    private SiteRepository $siteRepositoryMock;
+    private DestinationRepository $destinationRepositoryMock;
 
-
+    private Quote $quote;
 
     protected function setUp(): void
     {
         $this->faker = \Faker\Factory::create();
-        $this->templateManager = new TemplateManager();
-        $this->expectedDestination = (new DestinationRepository())->getById($this->faker->randomNumber());
-        $this->expectedSite = (new SiteRepository())->getById($this->faker->randomNumber());
-        $this->currentUser = $this->templateManager->getApplicationContext()->getCurrentUser();
+
+        $this->quoteRepositoryMock = $this->createMock(QuoteRepository::class);
+        $this->siteRepositoryMock = $this->createMock(SiteRepository::class);
+        $this->destinationRepositoryMock = $this->createMock(DestinationRepository::class);
+        $this->applicationContextMock = $this->createMock(ApplicationContext::class);
     }
 
+    /**
+     * Init template manager for tests with Quote input.
+     * @return void
+     */
+    private function initForTestsWithQuoteInput()
+    {
+        $quoteId = $this->faker->randomNumber();
+        $destinationId = $this->faker->randomNumber();
+        $siteId = $this->faker->randomNumber();
+
+        $this->expectedDestination = new Destination(
+            $destinationId,
+            $this->faker->country,
+            'en',
+            $this->faker->slug()
+        );
+        $this->expectedSite = new Site($siteId, $this->faker->url);
+        $this->quote = new Quote($quoteId, $siteId, $destinationId, $this->faker->date());
+
+        $this->siteRepositoryMock->expects($this->once())->method('getById')->with($siteId)->willReturn($this->expectedSite);
+        $this->destinationRepositoryMock->expects($this->once())->method('getById')->with($destinationId)->willReturn($this->expectedDestination);
+        $this->quoteRepositoryMock->expects($this->once())->method('getById')->with($quoteId)->willReturn($this->quote);
+        $this->templateManager = new TemplateManager($this->quoteRepositoryMock, $this->siteRepositoryMock, $this->destinationRepositoryMock, $this->applicationContextMock);
+    }
     /**
      * @test
      */
     public function testDestinationName()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
+        $this->initForTestsWithQuoteInput();
         $template = new Template(
             1,
             'Votre voyage avec une agence locale [quote:destination_name]',
@@ -46,7 +81,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote
+                'quote' => $this->quote
             ]
         );
 
@@ -59,8 +94,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testDestinationLink()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
-
+        $this->initForTestsWithQuoteInput();
         $template = new Template(
             1,
             'Votre voyage avec une agence locale [quote:destination_name]',
@@ -69,21 +103,20 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote
+                'quote' => $this->quote
             ]
         );
 
         $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
-        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->getUrl() . '/' . $this->expectedDestination->getCountryName() . '/quote/' . $quote->getId() . '', $message->getContent());
+        $this->assertEquals('Vous pouvez accéder à votre voyage sur le site ' . $this->expectedSite->getUrl() . '/' . $this->expectedDestination->getCountryName() . '/quote/' . $this->quote->getId() . '', $message->getContent());
     }
 
     /**
      * @test
      */
-    public function testSummary() : void
+    public function testSummary(): void
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
-
+        $this->initForTestsWithQuoteInput();
         $template = new Template(
             1,
             'Summary subject : [quote:summary]',
@@ -92,12 +125,12 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote
+                'quote' => $this->quote
             ]
         );
 
-        $this->assertEquals('Summary subject : ' . $quote->getId(), $message->getSubject());
-        $this->assertEquals('Summary content : ' . $quote->getId(), $message->getContent());
+        $this->assertEquals('Summary subject : ' . $this->quote->getId(), $message->getSubject());
+        $this->assertEquals('Summary content : ' . $this->quote->getId(), $message->getContent());
     }
 
     /**
@@ -105,8 +138,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testSummaryHTML()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->faker->randomNumber(), $this->expectedDestination->getId(), $this->faker->date());
-
+        $this->initForTestsWithQuoteInput();
         $template = new Template(
             1,
             'Summary subject : [quote:summary_html]',
@@ -115,12 +147,12 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote
+                'quote' => $this->quote
             ]
         );
 
-        $this->assertEquals('Summary subject : <p>' . $quote->getId() . '</p>', $message->getSubject());
-        $this->assertEquals('Summary content : <p>' . $quote->getId() . '</p>', $message->getContent());
+        $this->assertEquals('Summary subject : <p>' . $this->quote->getId() . '</p>', $message->getSubject());
+        $this->assertEquals('Summary content : <p>' . $this->quote->getId() . '</p>', $message->getContent());
     }
 
     /**
@@ -128,7 +160,9 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testApplicationContextUser()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
+        $this->initForTestsWithQuoteInput();
+        $currentUser = new User($this->faker->randomNumber(), $this->faker->firstName, $this->faker->lastName, $this->faker->email);
+        $this->applicationContextMock->expects($this->once())->method('getCurrentUser')->willReturn($currentUser);
 
         $template = new Template(
             1,
@@ -138,12 +172,12 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote
+                'quote' => $this->quote
             ]
         );
 
-        $this->assertEquals($this->currentUser->getFirstname() . ', votre voyage est prêt', $message->getSubject());
-        $this->assertEquals('Bonjour ' . $this->currentUser->getFirstname(), $message->getContent());
+        $this->assertEquals($currentUser->getFirstname() . ', votre voyage est prêt', $message->getSubject());
+        $this->assertEquals('Bonjour ' . $currentUser->getFirstname(), $message->getContent());
     }
 
     /**
@@ -151,7 +185,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
      */
     public function testSpecificUser()
     {
-        $quote = new Quote($this->faker->randomNumber(), $this->expectedSite->getId(), $this->expectedDestination->getId(), $this->faker->date());
+        $this->initForTestsWithQuoteInput();
         $user = new User($this->faker->randomNumber(), $this->faker->firstName, $this->faker->lastName, $this->faker->email);
 
         $template = new Template(
@@ -162,7 +196,7 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $message = $this->templateManager->getTemplateComputed(
             $template,
             [
-                'quote' => $quote,
+                'quote' => $this->quote,
                 'user' => $user
             ]
         );
@@ -170,11 +204,13 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals($user->getFirstname() . ', votre voyage est prêt', $message->getSubject());
         $this->assertEquals('Bonjour ' . $user->getFirstname(), $message->getContent());
     }
+
     /**
      * @test
      */
     public function testWithoutQuoteData()
     {
+        $this->templateManager = new TemplateManager($this->quoteRepositoryMock, $this->siteRepositoryMock, $this->destinationRepositoryMock, $this->applicationContextMock);
         $user = new User($this->faker->randomNumber(), $this->faker->firstName, $this->faker->lastName, $this->faker->email);
 
         $template = new Template(
@@ -191,5 +227,29 @@ class TemplateManagerTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals($user->getFirstname() . ', votre voyage est prêt', $message->getSubject());
         $this->assertEquals('Bonjour ' . $user->getFirstname(), $message->getContent());
+    }
+
+
+    /**
+     * @test
+     */
+    public function testMultiReplacementForSamePlaceholder()
+    {
+        $this->initForTestsWithQuoteInput();
+        $template = new Template(
+            1,
+            'Votre voyage avec une agence locale [quote:destination_name], oui avec une agence locale [quote:destination_name]',
+            "Merci d'avoir contacté un agent local pour votre voyage [quote:destination_name], je répète : pour votre voyage [quote:destination_name]"
+        );
+        $message = $this->templateManager->getTemplateComputed(
+            $template,
+            [
+                'quote' => $this->quote
+            ]
+        );
+
+        $this->assertEquals('Votre voyage avec une agence locale ' . $this->expectedDestination->getCountryName() . ', oui avec une agence locale ' . $this->expectedDestination->getCountryName(), $message->getSubject());
+        $this->assertEquals("Merci d'avoir contacté un agent local pour votre voyage " . $this->expectedDestination->getCountryName() . ', je répète : pour votre voyage ' . $this->expectedDestination->getCountryName(), $message->getContent());
+
     }
 }

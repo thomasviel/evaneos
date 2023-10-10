@@ -6,79 +6,58 @@ class TemplateManager
     private SiteRepository $siteRepository;
     private DestinationRepository $destinationRepository;
     private ApplicationContext $applicationContext;
+    private PlaceholderFactory $placeholderFactory;
 
-    public function __construct()
-    {
-        $this->quoteRepository = new QuoteRepository();
-        $this->siteRepository = new SiteRepository();
-        $this->destinationRepository = new DestinationRepository();
-        $this->applicationContext = new ApplicationContext();
+    public function __construct(
+        QuoteRepository $quoteRepository = null,
+        SiteRepository $siteRepository = null,
+        DestinationRepository $destinationRepository = null,
+        ApplicationContext $applicationContext = null,
+        PlaceholderFactory $placeholderFactory = null
+    ) {
+        $this->quoteRepository = $quoteRepository ?? new QuoteRepository();
+        $this->siteRepository = $siteRepository ?? new SiteRepository();
+        $this->destinationRepository = $destinationRepository ?? new DestinationRepository();
+        $this->applicationContext = $applicationContext ?? new ApplicationContext();
+        $this->placeholderFactory = $placeholderFactory ?? new PlaceholderFactory();
     }
+
 
     public function getTemplateComputed(Template $tpl, array $data): Template
     {
-        $replaced = clone($tpl);
-        $replaced->setSubject($this->computeText($replaced->getSubject(), $data));
-        $replaced->setContent($this->computeText($replaced->getContent(), $data));
-
-        return $replaced;
-    }
-
-    private function computeText(string $text, array $data) : string
-    {
-
         $quote = (isset($data['quote']) and $data['quote'] instanceof Quote) ? $data['quote'] : null;
+        $user  = (isset($data['user']) and ($data['user'] instanceof User)) ? $data['user'] : $this->applicationContext->getCurrentUser();
 
-        if ($quote) {
-            $_quoteFromRepository = $this->quoteRepository->getById($quote->getId());
-            $usefulObject = $this->siteRepository->getById($quote->getSiteId());
-            $destinationOfQuote = $this->destinationRepository->getById($quote->getDestinationId());
+        $existingQuote = $quote ? $this->quoteRepository->getById($quote->getId()) : null;
+        $existingSite = $existingQuote ? $this->siteRepository->getById($existingQuote->getSiteId()) : null;
+        $existingDestination = $existingQuote ? $this->destinationRepository->getById($existingQuote->getDestinationId()) : null;
 
-            $containsSummaryHtml = strpos($text, '[quote:summary_html]');
-            $containsSummary     = strpos($text, '[quote:summary]');
-
-            if ($containsSummaryHtml !== false || $containsSummary !== false) {
-                if ($containsSummaryHtml !== false) {
-                    $text = str_replace(
-                        '[quote:summary_html]',
-                        Quote::renderHtml($_quoteFromRepository),
-                        $text
-                    );
-                }
-                if ($containsSummary !== false) {
-                    $text = str_replace(
-                        '[quote:summary]',
-                        Quote::renderText($_quoteFromRepository),
-                        $text
-                    );
-                }
-            }
-
-            (strpos($text, '[quote:destination_name]') !== false) and $text = str_replace('[quote:destination_name]', $destinationOfQuote->getCountryName(), $text);
-        }
-
-        if (strpos($text, '[quote:destination_link]') !== false) {
-            $destination = $this->destinationRepository->getById($quote->getDestinationId());
-            $text = str_replace('[quote:destination_link]', $usefulObject->getUrl() . '/' . $destination->getCountryName() . '/quote/' . $_quoteFromRepository->getId(), $text);
-        }
-
-        /*
-         * USER
-         * [user:*]
-         */
-        $_user  = (isset($data['user'])  and ($data['user']  instanceof User)) ? $data['user'] : $this->applicationContext->getCurrentUser();
-        if($_user) {
-            (strpos($text, '[user:first_name]') !== false) and $text = str_replace('[user:first_name]', ucfirst(mb_strtolower($_user->getFirstname())), $text);
-        }
-
-        return $text;
+        return new Template(
+            $tpl->getId(),
+            $this->computeText($tpl->getSubject(), $user, $existingQuote, $existingSite, $existingDestination),
+            $this->computeText($tpl->getContent(), $user, $existingQuote, $existingSite, $existingDestination)
+        );
     }
 
     /**
-     * @return ApplicationContext
+     * This method will iterate over each placeholder instance, get its placeholder and the replacement text and replace the former with the latter.
+     *
+     * @param  string           $text
+     * @param  User             $user
+     * @param  Quote|null       $quote
+     * @param  Site|null        $site
+     * @param  Destination|null $destination
+     * @return string
      */
-    public function getApplicationContext(): ApplicationContext
+    private function computeText(string $text, User $user, ?Quote $quote, ?Site $site, ?Destination $destination) : string
     {
-        return $this->applicationContext;
+        foreach ($this->placeholderFactory->getPlaceholderReplacerInstances() as $placeholderReplacer) {
+            $placeholder = $placeholderReplacer->getPlaceholder();
+            $replacementText = $placeholderReplacer->getReplacementText($user, $quote, $destination, $site);
+
+            $text = str_replace($placeholder, $replacementText, $text);
+        }
+
+        return $text;
     }
 }

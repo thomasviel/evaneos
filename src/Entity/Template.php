@@ -2,7 +2,7 @@
 
 class Template
 {
-    private string $id;
+    private int $id;
     private string $subject;
     private string $content;
 

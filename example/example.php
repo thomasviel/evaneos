@@ -12,6 +12,13 @@ require_once __DIR__ . '/../src/Repository/Repository.php';
 require_once __DIR__ . '/../src/Repository/DestinationRepository.php';
 require_once __DIR__ . '/../src/Repository/QuoteRepository.php';
 require_once __DIR__ . '/../src/Repository/SiteRepository.php';
+require_once __DIR__ . '/../src/Service/Placeholder/PlaceholderFactory.php';
+require_once __DIR__ . '/../src/Service/Placeholder/PlaceholderReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteDestinationLinkReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteDestinationNameReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteSummaryHtmlReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/QuoteSummaryReplacer.php';
+require_once __DIR__ . '/../src/Service/Placeholder/UserFirstnameReplacer.php';
 require_once __DIR__ . '/../src/TemplateManager.php';
 
 $faker = \Faker\Factory::create();
